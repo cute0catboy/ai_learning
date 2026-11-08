@@ -1,41 +1,42 @@
 import numpy as np
 
-data = np.array([
-    [100, 105, 98, 103, 1500],
-    [103, 108, 101, 106, 1800],
-    [106, 110, 104, 105, 2100],
-    [105, 109, 102, 108, 1700],
-    [108, 115, 107, 113, 2500]
-])
+X = np.random.rand(100, 4)
+y = np.random.randint(0, 2, 100)
 
-daily_return = np.diff(data[:, 3]) / data[:-1, 3] * 100
-print(daily_return)
+# 1. Граница разделения считаем от размера данных
+n = X.shape[0]            # 100 наблюдений
+split_70 = int(n * 0.7)
+split_85 = int(n * 0.85)
 
-highlow_range = data[:, 1] - data[:, 2]
-print(highlow_range)
+# 2. Хронологическое разделение: один и тот же индекс для X и y
+X_train = X[:split_70]
+y_train = y[:split_70]
+X_validation = X[split_70:split_85]
+y_validation = y[split_70:split_85]
+X_test = X[split_85:]
+y_test = y[split_85:]
 
-body = data[:, 3] - data[:, 0]
-print(body)
+# 3. Размерности
+print(X_train.shape, y_train.shape)
+print(X_validation.shape, y_validation.shape)
+print(X_test.shape, y_test.shape)
 
-volume_change = np.diff(data[:, 4]) / data[:-1, 4] * 100
-print(volume_change)
+# 4. Соответствие X и y
+assert X_train.shape[0] == y_train.shape[0]
+assert X_validation.shape[0] == y_validation.shape[0]
+assert X_test.shape[0] == y_test.shape[0]
+X_restored = np.vstack((X_train, X_validation, X_test))
+y_restored = np.concatenate((y_train, y_validation, y_test))
+assert np.array_equal(X_restored, X)
+assert np.array_equal(y_restored, y)
 
-target = data[:-1, 3] < data[1:, 3]
-print(target)
+X_min = np.min(X_train, axis=0)
+X_max = np.max(X_train, axis=0)
 
-features = np.column_stack((
-    daily_return,
-    highlow_range[1:],
-    body[1:],
-    volume_change,
-))
-print(features)
+X_train_normalized = (X_train-X_min) / (X_max - X_min)
+X_validation_normalized = (X_validation-X_min) / (X_max - X_min)
+X_test_normalized = (X_test-X_min) / (X_max - X_min)
 
-x = features
-y = target
-
-max_x = np.max(x, axis=0)
-min_x = np.min(x, axis=0)
-
-scaled_x = (x - min_x) / (max_x - min_x)
-print(scaled_x)
+print(X_train_normalized)
+print(X_validation_normalized)
+print(X_test_normalized)
