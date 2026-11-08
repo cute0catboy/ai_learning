@@ -33,3 +33,9 @@ print(features)
 
 x = features
 y = target
+
+max_x = np.max(x, axis=0)
+min_x = np.min(x, axis=0)
+
+scaled_x = (x - min_x) / (max_x - min_x)
+print(scaled_x)
