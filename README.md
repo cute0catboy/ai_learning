@@ -21,6 +21,7 @@ use return_counter() and sma_ratio() and others features if you need
 4. create y - like X, but for 1 day later.
 5. history split of X and y for train, validation, test:
 
+<blockuote>
 n_samples = X.shape[0]
 split_70 = int(n_samples * 0.7)
 split_85 = int(n_samples * 0.85)
@@ -31,6 +32,7 @@ X_validation = X[split_70:split_85]
 y_validation = y[split_70:split_85]
 X_test = X[split_85:]
 y_test = y[split_85:]
+</blockuote>
 
 6. assert X_... with y_... - must be with similar shapes:
 
