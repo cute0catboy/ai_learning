@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 from pathlib import Path
+import matplotlib.pyplot as plt
 DATA = Path(__file__).parent.resolve() / "data"
+PLOTS = Path(__file__).parent.resolve() / "plots"
+DATA.mkdir(exist_ok=True)
+PLOTS.mkdir(exist_ok=True)
 
 np.random.seed(7)
 n = 300
@@ -15,7 +19,6 @@ volume = np.random.randint(800_000, 1_500_000, n)
 
 df = pd.DataFrame({"open": open_, "high": high, "low": low,
                    "close": close, "volume": volume}, index=dates)
-DATA.mkdir(exist_ok=True)
 df.to_csv(DATA / "prices.csv", index_label="Date")
 
 df2 = pd.read_csv(DATA / "prices.csv", index_col="Date", parse_dates=True)
@@ -111,3 +114,19 @@ for name, arr in [("train", X_train_normalized),
                   ("test", X_test_normalized)]:
     print(name, arr.min(axis=0).to_list(), arr.max(axis=0).to_list())
     assert not arr.isna().any().any()
+
+fig, ax = plt.subplots(figsize=(11, 4))
+ax.plot(df2["close"], color="#661A1A", label="close")
+ax.plot(df2["close"].rolling(20).mean(), color="#141A6E", label="SMA20")
+
+ax.axvspan(X_train.index[0], X_train.index[-1], color="#996A0561", label="train")
+ax.axvspan(X_validation.index[0], X_validation.index[-1], color="#1F3E8061", label="validation")
+ax.axvspan(X_test.index[0], X_test.index[-1], color="#1F805F61", label="test")
+
+ax.set_title("Close and SMA20")
+ax.set_xlabel("date")
+ax.set_ylabel("price")
+ax.legend()
+fig.tight_layout()
+fig.savefig(PLOTS / "price_splits.png", dpi=120)
+plt.show()

@@ -133,3 +133,88 @@ for name, arr in [("train", X_train_normalized),
     print(name, arr.min(axis=0).to_list(), arr.max(axis=0).to_list())
     assert not arr.isna().any().any()</code></pre>
 </blockquote>
+
+# graphics with matplotlib:
+
+Rules:
+- always use `fig, ax`, not `plt.plot`
+- savefig BEFORE plt.show()
+- one file name per plot
+- same bins and same scale when comparing two plots
+
+0. setup (once, at the top of the file):
+
+<blockquote>
+<pre><code>import matplotlib.pyplot as plt
+
+PLOTS = Path(__file__).parent.resolve() / "plots"
+PLOTS.mkdir(exist_ok=True)</code></pre>
+</blockquote>
+
+1. base template (every plot starts like this):
+
+<blockquote>
+<pre><code>fig, ax = plt.subplots(figsize=(10, 4))
+
+... plot commands here: ax.plot(...), ax.hist(...) ...
+
+ax.set_title("title")
+ax.set_xlabel("x")
+ax.set_ylabel("y")
+ax.legend()                      # only if there are label=...
+fig.tight_layout()               # no cut labels
+fig.savefig(PLOTS / "name.png", dpi=120)
+plt.show()
+plt.close(fig)                   # free memory</code></pre>
+</blockquote>
+
+2. line (Series with DatetimeIndex, dates go to x axis automatically):
+
+<blockquote>
+<pre><code>ax.plot(df["close"], color="#661A1A", label="close")
+ax.plot(df["close"].rolling(20).mean(), color="#141A6E", label="SMA20")</code></pre>
+</blockquote>
+
+3. histogram (distribution of values):
+
+<blockquote>
+<pre><code>ax.hist(X_train["ret"], bins=30, color="#4C72B0", edgecolor="white")</code></pre>
+</blockquote>
+
+4. vertical and horizontal lines (clip bounds, 0 and 1 for normalized data):
+
+<blockquote>
+<pre><code>ax.axvline(clip_low["ret"], color="red", linestyle="--", label="clip low")
+ax.axvline(clip_high["ret"], color="red", linestyle="--", label="clip high")
+ax.axhline(0, color="black", linestyle="--")
+ax.axhline(1, color="black", linestyle="--")</code></pre>
+</blockquote>
+
+5. colored date ranges (train / validation / test):
+
+<blockquote>
+<pre><code>ax.axvspan(X_train.index[0], X_train.index[-1], color="#996A0561", label="train")
+ax.axvspan(X_validation.index[0], X_validation.index[-1], color="#1F3E8061", label="validation")
+ax.axvspan(X_test.index[0], X_test.index[-1], color="#1F805F61", label="test")</code></pre>
+</blockquote>
+
+6. several series on one axis (train, validation, test have different dates, so lines go one after another):
+
+<blockquote>
+<pre><code>ax.plot(X_train_normalized["ret"], label="train")
+ax.plot(X_validation_normalized["ret"], label="validation")
+ax.plot(X_test_normalized["ret"], label="test")</code></pre>
+</blockquote>
+
+7. grid 1x2, before and after (axes is an array, sharey and common bins make plots comparable):
+
+<blockquote>
+<pre><code>col = "vol_change"
+bins = np.linspace(X_train[col].min(), X_train[col].max(), 31)
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 4), sharey=True)
+axes[0].hist(X_train[col], bins=bins, color="#4C72B0", edgecolor="white")
+axes[0].set_title("before clip")
+axes[1].hist(X_train_clipped[col], bins=bins, color="#55A868", edgecolor="white")
+axes[1].set_title("after clip")
+for ax in axes:
