@@ -138,40 +138,40 @@ def plot_before_after(before: pd.Series,
     return int((before != after).sum())
 
 
-def plot_normalized(train: pd.Series,
-                    validation: pd.Series,
-                    test: pd.Series,
-                    name: str = "normalized.png",
-                    show: bool = True,
-                    plots_dir: Path = PLOTS) -> dict:
-    '''
-    one normalized column for train / validation / test on one axis.
-    dashed lines at 0 and 1 = train range (min and max come from train only).
+# def plot_normalized(train: pd.Series,
+#                     validation: pd.Series,
+#                     test: pd.Series,
+#                     name: str = "normalized.png",
+#                     show: bool = True,
+#                     plots_dir: Path = PLOTS) -> dict:
+#     '''
+#     one normalized column for train / validation / test on one axis.
+#     dashed lines at 0 and 1 = train range (min and max come from train only).
 
-    params:
-    train, validation, test: pd.Series with dates in index
+#     params:
+#     train, validation, test: pd.Series with dates in index
 
-    return:
-    dict - {"validation": n_outside, "test": n_outside}, outside [0, 1]
-    '''
-    fig, ax = plt.subplots(figsize=(11, 4))
-    ax.plot(train, color=C_TRAIN, label="train")
-    ax.plot(validation, color=C_VAL, label="validation")
-    ax.plot(test, color=C_TEST, label="test")
-    ax.axhline(0, color="black", linestyle="--")
-    ax.axhline(1, color="black", linestyle="--")
+#     return:
+#     dict - {"validation": n_outside, "test": n_outside}, outside [0, 1]
+#     '''
+#     fig, ax = plt.subplots(figsize=(11, 4))
+#     ax.plot(train, color=C_TRAIN, label="train")
+#     ax.plot(validation, color=C_VAL, label="validation")
+#     ax.plot(test, color=C_TEST, label="test")
+#     ax.axhline(0, color="black", linestyle="--")
+#     ax.axhline(1, color="black", linestyle="--")
 
-    ax.set_title(f"Normalized {train.name}")
-    ax.set_xlabel("date")
-    ax.set_ylabel("value")
-    ax.legend()
-    fig.autofmt_xdate()
-    _finish(fig, name, show, plots_dir)
+#     ax.set_title(f"Normalized {name}") #here was bug
+#     ax.set_xlabel("date")
+#     ax.set_ylabel("value")
+#     ax.legend()
+#     fig.autofmt_xdate()
+#     _finish(fig, name, show, plots_dir)
 
-    return {
-        "validation": int((~validation.between(0, 1)).sum()),
-        "test": int((~test.between(0, 1)).sum()),
-    }
+#     return {
+#         "validation": int((~validation.between(0, 1)).sum()), #here bug, "between"???
+#         "test": int((~test.between(0, 1)).sum()),
+#     }
 
 
 def plot_price_volume(df: pd.DataFrame,

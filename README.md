@@ -143,7 +143,7 @@ here are defs:
 <pre><code>plot_price_splits
 plot_hist_bounds
 plot_before_after
-plot_normalized
+plot_normalized #works incorrect
 plot_price_volume</code></pre>
 </blockquote>
 

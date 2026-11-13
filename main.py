@@ -2,50 +2,34 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import mpl_plots as mp
-DATA = Path(__file__).parent.resolve() / "data"
+
 PLOTS = Path(__file__).parent.resolve() / "plots"
-DATA.mkdir(exist_ok=True)
 PLOTS.mkdir(exist_ok=True)
+DATA = Path(__file__).parent.resolve() / "data"
+DATA.mkdir(exist_ok=True)
 
-np.random.seed(7)
-n = 300
-dates = pd.date_range("2023-01-02", periods=n, freq="B")
-
-close = 100 * np.cumprod(1 + np.random.normal(0.0004, 0.012, n))
-open_ = close * (1 + np.random.normal(0, 0.004, n))
-high = np.maximum(open_, close) * (1 + np.abs(np.random.normal(0, 0.004, n)))
-low = np.minimum(open_, close) * (1 - np.abs(np.random.normal(0, 0.004, n)))
-volume = np.random.randint(800_000, 1_500_000, n)
-
-df = pd.DataFrame({"open": open_, "high": high, "low": low,
-                   "close": close, "volume": volume}, index=dates)
-df.to_csv(DATA / "prices.csv", index_label="Date")
-
-df2 = pd.read_csv(DATA / "prices.csv", index_col="Date", parse_dates=True)
+#github.com/Pubmarks/datasets
+df2 = pd.read_csv(DATA / "ohlcv.csv", index_col="date", parse_dates=True)
 assert df2.index.is_monotonic_increasing
 print(df2.index.dtype)
-
-print(df2.loc["2023-03"])
-print(len(df2.loc["2023-03"]))
 
 ret = df2["close"].pct_change()
 hl_range = (df2["high"] - df2["low"]) / df2["close"]
 body = (df2["close"] - df2["open"]) / df2["open"]
-vol_change = df2["volume"].pct_change()
+vol_rel = df2["volume"] / df2["volume"].rolling(20).mean() - 1      # объём относительно недавнего среднего
 
 df2["dow"] = df2.index.day_of_week
 wm_df = pd.DataFrame({"ret": ret, "dow": df2["dow"]})
 week_mean = wm_df.groupby("dow")["ret"].mean()
-print(week_mean)
 
 next_close = df2["close"].shift(-1)
 y_raw = (next_close > df2["close"]).astype(float)
 y_raw[next_close.isna()] = np.nan
 
-data = pd.DataFrame({"ret": ret, "hl_range": hl_range, "body": body, "vol_change": vol_change, "y": y_raw}).dropna()
+data = pd.DataFrame({"ret": ret, "hl_range": hl_range, "body": body, "vol_rel": vol_rel, "y": y_raw}).replace([np.inf, -np.inf], np.nan).dropna()
 print(data.shape)
 print(data.iloc[0])
-X = data[["ret", "hl_range", "body", "vol_change"]]
+X = data[["ret", "hl_range", "body", "vol_rel"]]
 y = data["y"].astype(int)
 assert not X.isna().any().any()
 
@@ -105,6 +89,18 @@ mm[mm == 0] = 1.0
 X_train_normalized = (X_train_clipped - X_min) / mm
 X_validation_normalized = (X_validation_clipped - X_min) / mm
 X_test_normalized = (X_test_clipped - X_min) / mm
+
+for name, a, b in [("train", X_train, X_train_clipped),
+                   ("val", X_validation, X_validation_clipped),
+                   ("test", X_test, X_test_clipped)]:
+    print(name, ((a != b).mean() * 100).round(1).to_dict())
+
+print(X_train_normalized.max())          # какой именно столбец не равен 1
+print(X_train_clipped.max())
+print(X_max, X_min, mm, sep="\n")
+print(np.isinf(X_train).sum())           # есть ли inf
+print(X_train.nunique())                 # 1 = константный столбец
+print(clip_low, clip_high, sep="\n")     # не nan ли границы
 
 assert np.allclose(X_train_normalized.min(), 0)
 assert np.allclose(X_train_normalized.max(), 1)
