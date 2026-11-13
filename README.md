@@ -12,31 +12,55 @@ data validation pipeline:
 <pre><code>s_ff = s.ffill()</code></pre>
 </blockquote>
 
-2. prepare features you need. ret and sma_ratio for example.
+2. prepare features you need with OHLCV or single value (for example, close). examples:
 
 <blockquote>
-<pre><code>ret = s_ff.pct_change()
-sma = s_ff.rolling(window).mean()
-sma_ratio = s_ff / sma - 1</code></pre>
+<pre><code>sma = s_ff.rolling(window).mean() #with close array
+sma_ratio = s_ff / sma - 1 #with close array
+ret = df["close"].pct_change() #with df OHLCV
+hl_range = (df["high"] - df["low"]) / df["close"] #with df OHLCV
+body = (df["close"] - df["open"]) / df["open"] #with df OHLCV
+vol_change = df["volume"].pct_change() #with df OHLCV</code></pre>
+</blockquote>
+
+2.1. some extra things.
+<blockquote>
+<pre><code>df["dow"] = df.index.day_of_week
+wm_df = pd.DataFrame({"ret": ret, "dow": df["dow"]})
+week_mean = wm_df.groupby("dow")["ret"].mean()</code></pre>
 </blockquote>
 
 3. create y (1 if next day close is higher). use float, so the last row can be nan (it has no real target).
 
 <blockquote>
-<pre><code>next_close = s_ff.shift(-1)
-y = (next_close > s_ff).astype(float)
-y[next_close.isna()] = np.nan</code></pre>
+<pre><code>next_close = df["close"].shift(-1)
+y_raw = (next_close > df["close"]).astype(float)
+y_raw[next_close.isna()] = np.nan</code></pre>
 </blockquote>
 
 4. build X and y from one table with one dropna(), so rows always match by date.
 the first row is the day with index window-1.
 
 <blockquote>
-<pre><code>data = pd.DataFrame({"ret": ret, "sma_ratio": sma_ratio, "y": y}).dropna()
-X = data[["ret", "sma_ratio"]]
+<pre><code>data = pd.DataFrame({"ret": ret, "hl_range": hl_range, "body": body, "vol_change": vol_change, "y": y_raw}).dropna()
+print(data.shape)
+print(data.iloc[0])
+X = data[["ret", "hl_range", "body", "vol_change"]]
 y = data["y"].astype(int)
 assert not X.isna().any().any()</code></pre>
 </blockquote>
+
+4.1. resample your df if you need.
+<blockquote>
+<pre><code>weekly = df.resample("W").agg({
+    "open": "first",
+    "high": "max",
+    "low": "min",
+    "close": "last",
+    "volume": "sum",
+})</code></pre>
+</blockquote>
+
 
 5. history split of X and y for train, validation, test (only by position, never shuffle):
 
@@ -73,14 +97,14 @@ axis=1 here means "align low/high with columns".
 Note: pandas std() uses ddof=1, numpy ddof=0.
 
 <blockquote>
-<pre><code>mu = X_train.mean()
-sd = X_train.std()
-low = mu - 3 * sd
-high = mu + 3 * sd
+<pre><code>mu = X_train.mean(axis=0)
+sd = X_train.std(axis=0)
+clip_low = mu - 3 * sd
+clip_high = mu + 3 * sd
 
-X_train_clipped = X_train.clip(lower=low, upper=high, axis=1)
-X_validation_clipped = X_validation.clip(lower=low, upper=high, axis=1)
-X_test_clipped = X_test.clip(lower=low, upper=high, axis=1)</code></pre>
+X_train_clipped = X_train.clip(lower=clip_low, upper=clip_high, axis=1)
+X_validation_clipped = X_validation.clip(lower=clip_low, upper=clip_high, axis=1)
+X_test_clipped = X_test.clip(lower=clip_low, upper=clip_high, axis=1)</code></pre>
 </blockquote>
 
 9. minmax normalize X (min and max only from clipped train):
@@ -100,9 +124,12 @@ X_test_normalized = (X_test_clipped - X_min) / mm</code></pre>
 10. final assert (train must be exactly [0, 1], val and test may go outside):
 
 <blockquote>
-<pre><code>for name, arr in [("train", X_train_normalized),
+<pre><code>assert np.allclose(X_train_normalized.min(), 0)
+assert np.allclose(X_train_normalized.max(), 1)
+
+for name, arr in [("train", X_train_normalized),
                   ("val", X_validation_normalized),
                   ("test", X_test_normalized)]:
-    print(name, arr.min().to_list(), arr.max().to_list())
+    print(name, arr.min(axis=0).to_list(), arr.max(axis=0).to_list())
     assert not arr.isna().any().any()</code></pre>
 </blockquote>
