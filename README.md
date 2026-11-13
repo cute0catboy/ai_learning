@@ -134,7 +134,20 @@ for name, arr in [("train", X_train_normalized),
     assert not arr.isna().any().any()</code></pre>
 </blockquote>
 
-# graphics with matplotlib:
+# mpl_plots.py:
+Its the art of vibecoding
+
+here are defs:
+
+plot_price_splits
+plot_hist_bounds
+plot_before_after
+plot_normalized
+plot_price_volume
+
+other info in docstring
+
+# graphics with matplotlib(unnecessary, i hate this, better use mpl_plots.py):
 
 Rules:
 - always use `fig, ax`, not `plt.plot`
@@ -155,8 +168,6 @@ PLOTS.mkdir(exist_ok=True)</code></pre>
 
 <blockquote>
 <pre><code>fig, ax = plt.subplots(figsize=(10, 4))
-
-... plot commands here: ax.plot(...), ax.hist(...) ...
 
 ax.set_title("title")
 ax.set_xlabel("x")
@@ -218,3 +229,19 @@ axes[0].set_title("before clip")
 axes[1].hist(X_train_clipped[col], bins=bins, color="#55A868", edgecolor="white")
 axes[1].set_title("after clip")
 for ax in axes:
+    ax.set_xlabel(col)
+axes[0].set_ylabel("count")
+fig.tight_layout()
+fig.savefig(PLOTS / "before_after_clip.png", dpi=120)</code></pre>
+</blockquote>
+
+8. counting values outside of bounds (no loops, no "&lt;" in code):
+
+<blockquote>
+<pre><code># outside clip bounds (train)
+outside = (~X_train["ret"].between(clip_low["ret"], clip_high["ret"])).sum()
+
+for name, arr in [("val", X_validation_normalized), ("test", X_test_normalized)]:
+    print(name, (~arr["ret"].between(0, 1)).sum())
+
+print((X_train != X_train_clipped).sum())</code></pre>
