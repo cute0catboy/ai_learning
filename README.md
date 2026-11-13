@@ -139,11 +139,13 @@ Its the art of vibecoding
 
 here are defs:
 
-plot_price_splits
+<blockquote>
+<pre><code>plot_price_splits
 plot_hist_bounds
 plot_before_after
 plot_normalized
-plot_price_volume
+plot_price_volume</code></pre>
+</blockquote>
 
 other info in docstring
 
